@@ -1,0 +1,591 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  autounattend.xml — Windows 10 22H2 pt-BR — Uso Corporativo TI (Baseado em Winhance + Schneegans)
+  Otimizado para: CPUs Antigas, 4GB DDR3 RAM, Chrome + Office, Sem Store/Fotos, Com Calculadora e .NET 3.5
+-->
+<unattend xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+
+  <settings pass="offlineServicing"></settings>
+
+  <!-- ============================================================
+       WINDOWS PE — Locale, chave produto Windows 10 Pro
+  ============================================================ -->
+  <settings pass="windowsPE">
+
+    <component name="Microsoft-Windows-International-Core-WinPE"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+      <SetupUILanguage>
+        <UILanguage>pt-BR</UILanguage>
+      </SetupUILanguage>
+      <InputLocale>0416:00000416</InputLocale>
+      <SystemLocale>pt-BR</SystemLocale>
+      <UILanguage>pt-BR</UILanguage>
+      <UserLocale>pt-BR</UserLocale>
+    </component>
+
+    <component name="Microsoft-Windows-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+      <UserData>
+        <ProductKey>
+          <!-- Chave generica Windows 10 Pro -->
+          <Key>W269N-WFGWX-YVC9B-4J6C9-T83GX</Key>
+          <WillShowUI>OnError</WillShowUI>
+        </ProductKey>
+        <AcceptEula>true</AcceptEula>
+      </UserData>
+    </component>
+
+  </settings>
+
+  <settings pass="generalize"></settings>
+
+  <!-- ============================================================
+       SPECIALIZE — Otimizacoes de Performance, Servicos, Debloat
+  ============================================================ -->
+  <settings pass="specialize">
+
+    <component name="Microsoft-Windows-Deployment"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Extrai scripts do XML para C:\Windows\Setup\Scripts\</Description>
+          <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "$xml = [xml]::new(); $xml.Load('C:\Windows\Panther\unattend.xml'); $sb = [scriptblock]::Create( $xml.unattend.Extensions.ExtractScript ); Invoke-Command -ScriptBlock $sb -ArgumentList $xml;"</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Description>Executa configuracoes principais de Specialize</Description>
+          <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\Specialize.ps1' -Raw | Invoke-Expression;"</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <Description>Carrega hive do usuario padrao</Description>
+          <Path>reg.exe load "HKU\DefaultUser" "C:\Users\Default\NTUSER.DAT"</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <Description>Aplica configuracoes no perfil padrao</Description>
+          <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\DefaultUser.ps1' -Raw | Invoke-Expression;"</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <Description>Descarrega hive do usuario padrao</Description>
+          <Path>reg.exe unload "HKU\DefaultUser"</Path>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+
+  </settings>
+
+  <settings pass="auditSystem"></settings>
+  <settings pass="auditUser"></settings>
+
+  <!-- ============================================================
+       OOBE SYSTEM — Usuario local, autologon, primeiro logon
+  ============================================================ -->
+  <settings pass="oobeSystem">
+
+    <component name="Microsoft-Windows-International-Core"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+      <InputLocale>0416:00000416</InputLocale>
+      <SystemLocale>pt-BR</SystemLocale>
+      <UILanguage>pt-BR</UILanguage>
+      <UserLocale>pt-BR</UserLocale>
+    </component>
+
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+
+      <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add">
+            <Name>suporte</Name>
+            <DisplayName>suporte</DisplayName>
+            <Group>Administrators</Group>
+            <Password>
+              <Value>SuaSenhaAqui</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+
+      <AutoLogon>
+        <Username>suporte</Username>
+        <Enabled>true</Enabled>
+        <LogonCount>1</LogonCount>
+        <Password>
+          <Value>SuaSenhaAqui</Value>
+          <PlainText>true</PlainText>
+        </Password>
+      </AutoLogon>
+
+      <OOBE>
+        <ProtectYourPC>3</ProtectYourPC>
+        <HideEULAPage>true</HideEULAPage>
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <NetworkLocation>Work</NetworkLocation>
+      </OOBE>
+
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Executa configuracoes finais do primeiro logon (incluindo Dominio)</Description>
+          <CommandLine>powershell.exe -WindowStyle Normal -NoProfile -Command "Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.ps1' -Raw | Invoke-Expression;"</CommandLine>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+
+    </component>
+
+  </settings>
+
+  <!-- ============================================================
+       EXTENSIONS — Scripts embutidos
+  ============================================================ -->
+  <Extensions xmlns="https://schneegans.de/windows/unattend-generator/">
+
+    <ExtractScript>
+param(
+    [xml] $Document
+);
+foreach( $file in $Document.unattend.Extensions.File ) {
+    $path = [System.Environment]::ExpandEnvironmentVariables( $file.GetAttribute( 'path' ) );
+    mkdir -Path( $path | Split-Path -Parent ) -ErrorAction 'SilentlyContinue';
+    $encoding = switch( [System.IO.Path]::GetExtension( $path ) ) {
+        { $_ -in '.ps1', '.xml' } { [System.Text.Encoding]::UTF8; }
+        { $_ -in '.reg', '.vbs', '.js' } { [System.Text.UnicodeEncoding]::new( $false, $true ); }
+        default { [System.Text.Encoding]::Default; }
+    };
+    $bytes = $encoding.GetPreamble() + $encoding.GetBytes( $file.InnerText.Trim() );
+    [System.IO.File]::WriteAllBytes( $path, $bytes );
+}
+    </ExtractScript>
+
+    <!-- ============================================================
+         RemovePackages.ps1 — Debloat de Apps Windows 10
+         (Preserva Microsoft.WindowsCalculator)
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\RemovePackages.ps1"><![CDATA[
+$selectors = @(
+    'Microsoft.Microsoft3DViewer';
+    'Microsoft.MixedReality.Portal';
+    'Microsoft.BingNews';
+    'Microsoft.BingWeather';
+    'Microsoft.549981C3F5F10';
+    'Microsoft.WindowsFeedbackHub';
+    'Microsoft.GetHelp';
+    'Microsoft.Getstarted';
+    'microsoft.windowscommunicationsapps';
+    'Microsoft.WindowsMaps';
+    'Microsoft.MicrosoftOfficeHub';
+    'Microsoft.Office.OneNote';
+    'Microsoft.MSPaint';
+    'Microsoft.People';
+    'Microsoft.PowerAutomateDesktop';
+    'MicrosoftCorporationII.QuickAssist';
+    'Microsoft.SkypeApp';
+    'Microsoft.ScreenSketch';
+    'Microsoft.MicrosoftSolitaireCollection';
+    'Microsoft.Todos';
+    'Microsoft.WindowsSoundRecorder';
+    'Microsoft.Wallet';
+    'Microsoft.Xbox.TCUI';
+    'Microsoft.XboxApp';
+    'Microsoft.XboxGameOverlay';
+    'Microsoft.XboxGamingOverlay';
+    'Microsoft.XboxIdentityProvider';
+    'Microsoft.XboxSpeechToTextOverlay';
+    'Microsoft.GamingApp';
+    'Microsoft.YourPhone';
+    'Microsoft.ZuneMusic';
+    'Microsoft.ZuneVideo';
+    'Microsoft.MicrosoftStickyNotes';
+    'Microsoft.Windows.Photos';
+    'Microsoft.WindowsStore';
+    'Microsoft.Print3D';
+    'Microsoft.OneConnect';
+    'Microsoft.WindowsAlarms';
+    'Microsoft.WindowsCamera';
+);
+$getCommand = { Get-AppxProvisionedPackage -Online; };
+$filterCommand = { $_.DisplayName -eq $selector; };
+$removeCommand = {
+    [CmdletBinding()]
+    param([Parameter(Mandatory, ValueFromPipeline)] $InputObject);
+    process { $InputObject | Remove-AppxProvisionedPackage -AllUsers -Online -ErrorAction 'Continue'; }
+};
+$type = 'Package';
+$logfile = 'C:\Windows\Setup\Scripts\RemovePackages.log';
+& {
+    $installed = & $getCommand;
+    foreach ($selector in $selectors) {
+        $result = [ordered] @{ Selector = $selector; };
+        $found = $installed | Where-Object -FilterScript $filterCommand;
+        if ($found) {
+            $result.Output = $found | & $removeCommand;
+            if ($?) { $result.Message = "$type removed."; }
+            else { $result.Message = "$type not removed."; $result.Error = $Error[0]; }
+        } else {
+            $result.Message = "$type not installed.";
+        }
+        $result | ConvertTo-Json -Depth 3 -Compress;
+    }
+} *>&1 >> $logfile;
+]]></File>
+
+    <!-- ============================================================
+         RemoveCapabilities.ps1 — Remove recursos opcionais
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\RemoveCapabilities.ps1"><![CDATA[
+$selectors = @(
+    'Print.Fax.Scan';
+    'Language.Handwriting';
+    'MathRecognizer';
+    'OneCoreUAP.OneSync';
+    'App.Support.QuickAssist';
+    'Language.Speech';
+    'Language.TextToSpeech';
+    'App.StepsRecorder';
+    'Media.WindowsMediaPlayer';
+    'Microsoft.Windows.WordPad';
+);
+$getCommand = {
+    Get-WindowsCapability -Online | Where-Object -Property 'State' -NotIn -Value @('NotPresent'; 'Removed';);
+};
+$filterCommand = { ($_.Name -split '~')[0] -eq $selector; };
+$removeCommand = {
+    [CmdletBinding()]
+    param([Parameter(Mandatory, ValueFromPipeline)] $InputObject);
+    process { $InputObject | Remove-WindowsCapability -Online -ErrorAction 'Continue'; }
+};
+$type = 'Capability';
+$logfile = 'C:\Windows\Setup\Scripts\RemoveCapabilities.log';
+& {
+    $installed = & $getCommand;
+    foreach ($selector in $selectors) {
+        $result = [ordered] @{ Selector = $selector; };
+        $found = $installed | Where-Object -FilterScript $filterCommand;
+        if ($found) {
+            $result.Output = $found | & $removeCommand;
+            if ($?) { $result.Message = "$type removed."; }
+            else { $result.Message = "$type not removed."; $result.Error = $Error[0]; }
+        } else {
+            $result.Message = "$type not installed.";
+        }
+        $result | ConvertTo-Json -Depth 3 -Compress;
+    }
+} *>&1 >> $logfile;
+]]></File>
+
+    <!-- ============================================================
+         SetStartLayout.ps1 — Menu Iniciar Limpo para Windows 10
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\SetStartLayout.ps1"><![CDATA[
+$xml = @'
+<LayoutModificationTemplate xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification"
+    xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout"
+    xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1">
+  <LayoutOptions StartTileGroupCellWidth="6" />
+  <DefaultLayoutOverride>
+    <StartLayoutCollection>
+      <defaultlayout:StartLayout GroupCellWidth="6" />
+    </StartLayoutCollection>
+  </DefaultLayoutOverride>
+</LayoutModificationTemplate>
+'@
+$dir = 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell'
+mkdir -Path $dir -ErrorAction SilentlyContinue
+Set-Content -Path "$dir\LayoutModification.xml" -Value $xml -Encoding UTF8 -Force
+]]></File>
+
+    <!-- ============================================================
+         Specialize.ps1 — Configuracoes Principais do Sistema Winhance
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\Specialize.ps1"><![CDATA[
+$log = 'C:\Windows\Setup\Scripts\Specialize.log'
+function Log { param($m) "$(Get-Date -f 'HH:mm:ss') $m" | Out-File $log -Append -Encoding UTF8 }
+Log '=== Specialize.ps1 iniciado (Windows 10 22H2) ==='
+
+# --- HABILITAR .NET FRAMEWORK 3.5 ---
+try {
+    Log 'Habilitando .NET Framework 3.5...'
+    Dism /Online /Enable-Feature /FeatureName:NetFx3 /All /NoRestart 2>&1 | Out-Null
+    Log '.NET Framework 3.5 habilitado com sucesso'
+} catch {
+    Log "Aviso ao habilitar .NET 3.5: $($_.Exception.Message)"
+}
+
+# --- ONEDRIVE: remover instalador e atalhos ---
+Remove-Item -LiteralPath 'C:\Users\Default\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\OneDrive.lnk',
+            'C:\Windows\System32\OneDriveSetup.exe',
+            'C:\Windows\SysWOW64\OneDriveSetup.exe' -ErrorAction Continue
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Communications" /v ConfigureChatAutoInstall /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'OneDrive e auto-installs bloqueados'
+
+# --- REMOCAO DE APPS E CAPABILITIES ---
+Log 'Iniciando remocao de apps...'
+Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\RemovePackages.ps1' -Raw | Invoke-Expression
+Log 'Apps removidos'
+
+Log 'Iniciando remocao de capabilities...'
+Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\RemoveCapabilities.ps1' -Raw | Invoke-Expression
+Log 'Capabilities removidas'
+
+# --- CONTA: senha sem expiracao ---
+net.exe accounts /maxpwage:UNLIMITED 2>&1 | Out-Null
+Log 'Senha sem expiracao configurada'
+
+# --- SMARTSCREEN: desabilitado ---
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreenEnabled /t REG_SZ /d "Off" /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Systray" /v HideSystray /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+Log 'SmartScreen desabilitado'
+
+# --- REMOTE DESKTOP: habilitado ---
+netsh.exe advfirewall firewall set rule group="@FirewallAPI.dll,-28752" new enable=Yes 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'Remote Desktop habilitado'
+
+# --- EXECUCAO POWERSHELL ---
+Set-ExecutionPolicy -Scope LocalMachine -ExecutionPolicy RemoteSigned -Force
+reg.exe add "HKLM\Software\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" /v ExecutionPolicy /t REG_SZ /d "RemoteSigned" /f 2>&1 | Out-Null
+
+# --- SISTEMA DE ARQUIVOS ---
+fsutil.exe behavior set disableLastAccess 1 2>&1 | Out-Null
+
+# --- CONTENT DELIVERY / ADS SILENCIOSOS ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableWindowsConsumerFeatures /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+
+# --- BITLOCKER: prevenir criptografia automatica ---
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\BitLocker" /v PreventDeviceEncryption /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+
+# --- EDGE: sem first run, sem startup boost, sem execucao em segundo plano ---
+reg.exe add "HKLM\Software\Policies\Microsoft\Edge" /v HideFirstRunExperience /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Policies\Microsoft\Edge" /v BackgroundModeEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Policies\Microsoft\Edge" /v StartupBoostEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# --- MICROSOFT STORE: desativar download automatico (wsappx) ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\WindowsStore" /v AutoDownload /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+Log 'Edge congelado em segundo plano e Store AutoDownload desativado'
+
+# --- NEWS AND INTERESTS (NOTICIAS E INTERESSES WIN10) ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# --- UAC: elevacao silenciosa para admins ---
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v ConsentPromptBehaviorAdmin /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v PromptOnSecureDesktop /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# --- START MENU WIN10 LAYOUT ---
+Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\SetStartLayout.ps1' -Raw | Invoke-Expression
+
+# --- EFEITOS VISUAIS: otimizados para desempenho ---
+$ve = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects'
+@{
+    'ControlAnimations'      = 0
+    'AnimateMinMax'          = 1
+    'TaskbarAnimations'      = 1
+    'DWMAeroPeekEnabled'     = 0
+    'MenuAnimation'          = 0
+    'TooltipAnimation'       = 0
+    'SelectionFade'          = 0
+    'DWMSaveThumbnailEnabled'= 0
+    'CursorShadow'           = 0
+    'ListviewShadow'         = 0
+    'ThumbnailsOrIcon'       = 1
+    'ListviewAlphaSelect'    = 0
+    'DragFullWindows'        = 1
+    'ComboBoxAnimation'      = 0
+    'FontSmoothing'          = 1
+    'ListBoxSmoothScrolling' = 1
+    'DropShadow'             = 0
+}.GetEnumerator() | ForEach-Object {
+    Set-ItemProperty -LiteralPath "$ve\$($_.Key)" -Name 'DefaultValue' -Value $_.Value -Type DWord -Force -ErrorAction SilentlyContinue
+}
+
+# --- TELEMETRIA: desabilitada ---
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v AITEnable /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v AllowCortana /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo" /v DisabledByGroupPolicy /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+
+# --- PERFORMANCE: otimizacoes para CPUs antigas e 4GB RAM ---
+reg.exe add "HKLM\System\CurrentControlSet\Control\PriorityControl" /v Win32PrioritySeparation /t REG_DWORD /d 38 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v SystemResponsiveness /t REG_DWORD /d 10 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v NetworkThrottlingIndex /t REG_DWORD /d 10 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control" /v SvcHostSplitThresholdInKB /t REG_DWORD /d 3670016 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control" /v ServicesPipeTimeout /t REG_DWORD /d 30000 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v PowerThrottlingOff /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v AllowGameDVR /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v LetAppsRunInBackground /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+
+# --- DEVICEGUARD / VBS: desabilitado ---
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard" /v EnableVirtualizationBasedSecurity /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# --- WINDOWS UPDATE: bloquear apenas drivers opcionais ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v ExcludeWUDriversInQualityUpdate /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+
+# --- SERVICOS: otimizados para 4GB RAM ---
+$services = @{
+    'DiagTrack'              = 3
+    'CDPSvc'                 = 3
+    'WerSvc'                 = 3
+    'lfsvc'                  = 3
+    'XblAuthManager'         = 3
+    'XblGameSave'            = 3
+    'XboxNetApiSvc'          = 3
+    'WbioSrvc'               = 3
+    'Fax'                    = 4
+    'WMPNetworkSvc'          = 4
+    'TabletInputService'     = 4
+    'SysMain'                = 4  # Superfetch desabilitado (libera RAM em 4GB)
+    'WSearch'                = 3
+    'Spooler'                = 2  # Automatic (impressoras de rede Epson WF-M5899)
+}
+foreach ($s in $services.GetEnumerator()) {
+    reg.exe add "HKLM\SYSTEM\CurrentControlSet\Services\$($s.Key)" /v Start /t REG_DWORD /d $s.Value /f 2>$null | Out-Null
+}
+
+# --- TAREFAS AGENDADAS: desabilitar telemetria ---
+$tasks = @(
+    '\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser'
+    '\Microsoft\Windows\Application Experience\ProgramDataUpdater'
+    '\Microsoft\Windows\Customer Experience Improvement Program\Consolidator'
+    '\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip'
+    '\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector'
+    '\Microsoft\Windows\Feedback\Siuf\DmClient'
+    '\Microsoft\Windows\Windows Error Reporting\QueueReporting'
+)
+foreach ($t in $tasks) {
+    schtasks /Change /TN "$t" /Disable 2>$null | Out-Null
+}
+
+# --- PLANO DE ENERGIA: Equilibrado TI ---
+$planGuid = '381b4222-f694-41f0-9685-ff5bb260df2e'
+powercfg /changename $planGuid 'Equilibrado TI' 2>$null | Out-Null
+powercfg /setacvalueindex $planGuid 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 5 2>$null | Out-Null
+powercfg /setacvalueindex $planGuid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100 2>$null | Out-Null
+powercfg /setactive $planGuid 2>$null | Out-Null
+powercfg /hibernate off 2>$null | Out-Null
+
+Log '=== Specialize.ps1 concluido ==='
+]]></File>
+
+    <!-- ============================================================
+         DefaultUser.ps1 — Perfil Padrao dos Usuarios
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\DefaultUser.ps1"><![CDATA[
+$log = 'C:\Windows\Setup\Scripts\DefaultUser.log'
+function Log { param($m) "$(Get-Date -f 'HH:mm:ss') $m" | Out-File $log -Append -Encoding UTF8 }
+Log '=== DefaultUser.ps1 iniciado ==='
+
+Remove-ItemProperty -LiteralPath 'Registry::HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'OneDriveSetup' -Force -ErrorAction Continue
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v AppCaptureEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# ContentDeliveryManager: sem anuncios silenciosos ou apps sugeridos
+$cdm = 'ContentDeliveryAllowed','FeatureManagementEnabled','OEMPreInstalledAppsEnabled','PreInstalledAppsEnabled',
+       'PreInstalledAppsEverEnabled','SilentInstalledAppsEnabled','SoftLandingEnabled','SubscribedContentEnabled',
+       'SystemPaneSuggestionsEnabled'
+foreach ($n in $cdm) {
+    reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v $n /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+}
+
+reg.exe add "HKU\DefaultUser\Software\Policies\Microsoft\Windows\Explorer" /v DisableSearchBoxSuggestions /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+
+# Registrar UserOnce.ps1 no primeiro logon de cada usuario
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\RunOnce" /v "UnattendUserSetup" /t REG_SZ /d "powershell.exe -WindowStyle Normal -NoProfile -Command \"Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\UserOnce.ps1' -Raw | Invoke-Expression;\"" /f 2>&1 | Out-Null
+
+Log '=== DefaultUser.ps1 concluido ==='
+]]></File>
+
+    <!-- ============================================================
+         UserOnce.ps1 — Configuracoes de Interface no Primeiro Logon
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\UserOnce.ps1"><![CDATA[
+$log = "$env:TEMP\UserOnce.log"
+function Log { param($m) "$(Get-Date -f 'HH:mm:ss') $m" | Out-File $log -Append -Encoding UTF8 }
+Log '=== UserOnce.ps1 iniciado ==='
+
+# Efeitos visuais customizados
+Set-ItemProperty -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects' -Name 'VisualFXSetting' -Type 'DWord' -Value 3 -Force -ErrorAction SilentlyContinue
+
+# Tema Escuro no Windows 10
+$themeKey = 'Registry::HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+Set-ItemProperty -LiteralPath $themeKey -Name 'SystemUsesLightTheme' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+Set-ItemProperty -LiteralPath $themeKey -Name 'AppsUseLightTheme' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+Set-ItemProperty -LiteralPath $themeKey -Name 'EnableTransparency' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+
+# Papel de parede: preto solido (economiza memoria)
+try {
+    Add-Type -TypeDefinition '
+using System; using System.Drawing; using System.Runtime.InteropServices;
+public class WP {
+    [DllImport("user32.dll")] public static extern bool SystemParametersInfo(uint a,uint b,string c,uint d);
+    [DllImport("user32.dll")] public static extern bool SetSysColors(int n, int[] e, int[] v);
+}' -ReferencedAssemblies 'System.Drawing' -ErrorAction Stop
+    [WP]::SystemParametersInfo(20, 0, "", 0) | Out-Null
+    [WP]::SetSysColors(1, @(1), @(0)) | Out-Null
+    Set-ItemProperty 'Registry::HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Wallpapers' -Name 'BackgroundType' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty 'Registry::HKCU\Control Panel\Desktop' -Name 'WallPaper' -Value '' -Type String -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty 'Registry::HKCU\Control Panel\Colors' -Name 'Background' -Value '0 0 0' -Type String -Force -ErrorAction SilentlyContinue
+} catch {
+    Log "Aviso ao configurar papel de parede: $($_.Exception.Message)"
+}
+
+# Cor de acento Azul #0078D4
+try {
+    Add-Type -AssemblyName 'System.Drawing'
+    $accent = [System.Drawing.ColorTranslator]::FromHtml('#0078D4')
+    $dword = [System.BitConverter]::ToUInt32([byte[]]@($accent.R, $accent.G, $accent.B, $accent.A), 0)
+    Set-ItemProperty -LiteralPath 'Registry::HKCU\Software\Microsoft\Windows\DWM' -Name 'AccentColor' -Value $dword -Type DWord -Force -ErrorAction SilentlyContinue
+} catch {}
+
+Start-Sleep -Seconds 1
+Get-Process -Name 'explorer' -ErrorAction SilentlyContinue | Where-Object {
+    $_.SessionId -eq (Get-Process -Id $PID).SessionId
+} | Stop-Process -Force
+Log '=== UserOnce.ps1 concluido ==='
+]]></File>
+
+    <!-- ============================================================
+         FirstLogon.ps1 — Executado no Primeiro Logon (Ingresso no Dominio)
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\FirstLogon.ps1"><![CDATA[
+$log = 'C:\Windows\Setup\Scripts\FirstLogon.log'
+function Log { param($m) "$(Get-Date -f 'HH:mm:ss') $m" | Out-File $log -Append -Encoding UTF8 }
+Log '=== FirstLogon.ps1 iniciado ==='
+
+# Desabilitar AutoLogon para proximos reboots
+Set-ItemProperty -LiteralPath 'Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoLogonCount' -Type 'DWord' -Value 0 -Force -ErrorAction SilentlyContinue
+
+# --- INGRESSO EM DOMINIO AUTOMATIZADO ---
+# NOTA DE CONFIGURACAO: Substitua 'SEUDOMINIO.LOCAL' pelo nome real do seu dominio de rede.
+# Se precisar de credenciais especificas para o join, configure um script ou conta dedicada.
+$Dominio = "SEUDOMINIO.LOCAL"
+try {
+    Log "Tentando ingressar a maquina no dominio $Dominio..."
+    # Tentativa de ingresso automatico (se DHCP / Active Directory permitir ou credencial de dominio estiver disponivel no ambiente)
+    # Add-Computer -DomainName $Dominio -Restart -ErrorAction Stop
+    Log "Script de dominio preparado. Ajuste a variavel \$Dominio caso necessario."
+} catch {
+    Log "Aviso ao ingressar no dominio: $($_.Exception.Message)"
+}
+
+Log '=== FirstLogon.ps1 concluido ==='
+]]></File>
+
+  </Extensions>
+
+</unattend>

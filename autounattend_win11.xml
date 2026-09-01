@@ -1,0 +1,882 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  autounattend_ideal.xml — Windows 11 25H2 pt-BR — Uso Corporativo TI
+  Gerado em: 2026-07-24
+  Base: Win11_25H2_BrazilianPortuguese_x64.iso
+  Combina: Winhance (servicos, telemetria, IA, performance) + schneegans.de (locale, usuario, capabilities, interface)
+  Otimizado para: Chrome + Office, maquinas 4GB DDR3, CPUs antigas
+-->
+<unattend xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+
+  <settings pass="offlineServicing"></settings>
+
+  <!-- ============================================================
+       WINDOWS PE — Locale, chave produto, bypasses hardware
+  ============================================================ -->
+  <settings pass="windowsPE">
+
+    <component name="Microsoft-Windows-International-Core-WinPE"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+      <SetupUILanguage>
+        <UILanguage>pt-BR</UILanguage>
+      </SetupUILanguage>
+      <InputLocale>0416:00000416</InputLocale>
+      <SystemLocale>pt-BR</SystemLocale>
+      <UILanguage>pt-BR</UILanguage>
+      <UserLocale>pt-BR</UserLocale>
+    </component>
+
+    <component name="Microsoft-Windows-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+      <UserData>
+        <ProductKey>
+          <!-- Chave generica Pro — instalacao silent, sem tela de produto -->
+          <Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
+          <WillShowUI>OnError</WillShowUI>
+        </ProductKey>
+        <AcceptEula>true</AcceptEula>
+      </UserData>
+      <!-- Bypasses necessarios: Secure Boot desativado nas maquinas -->
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Bypass TPM 2.0 check</Description>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Description>Bypass Secure Boot check</Description>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <Description>Bypass Storage check</Description>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassStorageCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <Description>Bypass CPU check</Description>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassCPUCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <Description>Bypass RAM check</Description>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>6</Order>
+          <Description>Bypass Disk check</Description>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassDiskCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+
+  </settings>
+
+  <settings pass="generalize"></settings>
+
+  <!-- ============================================================
+       SPECIALIZE — Configuracoes de sistema, apps, performance
+  ============================================================ -->
+  <settings pass="specialize">
+
+    <component name="Microsoft-Windows-Deployment"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Extrai scripts do XML para C:\Windows\Setup\Scripts\</Description>
+          <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "$xml = [xml]::new(); $xml.Load('C:\Windows\Panther\unattend.xml'); $sb = [scriptblock]::Create( $xml.unattend.Extensions.ExtractScript ); Invoke-Command -ScriptBlock $sb -ArgumentList $xml;"</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Description>Executa configuracoes principais do sistema</Description>
+          <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\Specialize.ps1' -Raw | Invoke-Expression;"</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <Description>Carrega hive do usuario padrao</Description>
+          <Path>reg.exe load "HKU\DefaultUser" "C:\Users\Default\NTUSER.DAT"</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <Description>Aplica configuracoes no perfil padrao</Description>
+          <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\DefaultUser.ps1' -Raw | Invoke-Expression;"</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <Description>Descarrega hive do usuario padrao</Description>
+          <Path>reg.exe unload "HKU\DefaultUser"</Path>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+
+  </settings>
+
+  <settings pass="auditSystem"></settings>
+  <settings pass="auditUser"></settings>
+
+  <!-- ============================================================
+       OOBE SYSTEM — Locale, usuario, autologon, primeiro logon
+  ============================================================ -->
+  <settings pass="oobeSystem">
+
+    <component name="Microsoft-Windows-International-Core"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+      <InputLocale>0416:00000416</InputLocale>
+      <SystemLocale>pt-BR</SystemLocale>
+      <UILanguage>pt-BR</UILanguage>
+      <UserLocale>pt-BR</UserLocale>
+    </component>
+
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS">
+
+      <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add">
+            <Name>suporte</Name>
+            <DisplayName>suporte</DisplayName>
+            <Group>Administrators</Group>
+            <Password>
+              <Value>SuaSenhaAqui</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+
+      <AutoLogon>
+        <Username>suporte</Username>
+        <Enabled>true</Enabled>
+        <LogonCount>1</LogonCount>
+        <Password>
+          <Value>SuaSenhaAqui</Value>
+          <PlainText>true</PlainText>
+        </Password>
+      </AutoLogon>
+
+      <OOBE>
+        <ProtectYourPC>3</ProtectYourPC>
+        <HideEULAPage>true</HideEULAPage>
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <NetworkLocation>Work</NetworkLocation>
+      </OOBE>
+
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Executa configuracoes finais do primeiro logon</Description>
+          <CommandLine>powershell.exe -WindowStyle Normal -NoProfile -Command "Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.ps1' -Raw | Invoke-Expression;"</CommandLine>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+
+    </component>
+
+  </settings>
+
+  <!-- ============================================================
+       EXTENSIONS — Scripts embutidos
+  ============================================================ -->
+  <Extensions xmlns="https://schneegans.de/windows/unattend-generator/">
+
+    <!-- Extrai todos os arquivos <File> para disco durante o specialize -->
+    <ExtractScript>
+param(
+    [xml] $Document
+);
+foreach( $file in $Document.unattend.Extensions.File ) {
+    $path = [System.Environment]::ExpandEnvironmentVariables( $file.GetAttribute( 'path' ) );
+    mkdir -Path( $path | Split-Path -Parent ) -ErrorAction 'SilentlyContinue';
+    $encoding = switch( [System.IO.Path]::GetExtension( $path ) ) {
+        { $_ -in '.ps1', '.xml' } { [System.Text.Encoding]::UTF8; }
+        { $_ -in '.reg', '.vbs', '.js' } { [System.Text.UnicodeEncoding]::new( $false, $true ); }
+        default { [System.Text.Encoding]::Default; }
+    };
+    $bytes = $encoding.GetPreamble() + $encoding.GetBytes( $file.InnerText.Trim() );
+    [System.IO.File]::WriteAllBytes( $path, $bytes );
+}
+    </ExtractScript>
+
+    <!-- ============================================================
+         RemovePackages.ps1 — Remove apps provisioned (bloat + IA)
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\RemovePackages.ps1"><![CDATA[
+$selectors = @(
+    'Microsoft.Microsoft3DViewer';
+    'Microsoft.MixedReality.Portal';
+    'Microsoft.BingSearch';
+    'Microsoft.BingNews';
+    'Microsoft.BingWeather';
+    'Clipchamp.Clipchamp';
+    'Microsoft.549981C3F5F10';
+    'MicrosoftCorporationII.MicrosoftFamily';
+    'Microsoft.Windows.DevHome';
+    'Microsoft.WindowsFeedbackHub';
+    'Microsoft.Edge.GameAssist';
+    'Microsoft.GetHelp';
+    'Microsoft.Getstarted';
+    'microsoft.windowscommunicationsapps';
+    'Microsoft.WindowsMaps';
+    'Microsoft.MicrosoftOfficeHub';
+    'Microsoft.Office.OneNote';
+    'Microsoft.OutlookForWindows';
+    'Microsoft.Paint';
+    'Microsoft.MSPaint';
+    'Microsoft.People';
+    'Microsoft.PowerAutomateDesktop';
+    'MicrosoftCorporationII.QuickAssist';
+    'Microsoft.SkypeApp';
+    'Microsoft.ScreenSketch';
+    'Microsoft.MicrosoftSolitaireCollection';
+    'MicrosoftTeams';
+    'MSTeams';
+    'Microsoft.Todos';
+    'Microsoft.WindowsSoundRecorder';
+    'Microsoft.Wallet';
+    'Microsoft.Xbox.TCUI';
+    'Microsoft.XboxApp';
+    'Microsoft.XboxGameOverlay';
+    'Microsoft.XboxGamingOverlay';
+    'Microsoft.XboxIdentityProvider';
+    'Microsoft.XboxSpeechToTextOverlay';
+    'Microsoft.GamingApp';
+    'Microsoft.YourPhone';
+    'Microsoft.ZuneMusic';
+    'Microsoft.MicrosoftStickyNotes';
+    'Microsoft.Copilot';
+    'Microsoft.Windows.Ai.Copilot.Provider';
+    'Microsoft.Copilot_8wekyb3d8bbwe';
+    'MicrosoftWindows.Client.AIX';
+    'MicrosoftWindows.Client.CoPilot';
+    'Microsoft.Office.ActionsServer';
+    'Microsoft.WritingAssistant';
+    'WindowsWorkload.OnnxRuntimeGenAI';
+    'WindowsWorkload.SemanticTextSimilarity';
+    'WindowsWorkload.ImageSearch';
+    'WindowsWorkload.ContentExtraction';
+    'WindowsWorkload.ScreenRegionDetection';
+    'WindowsWorkload.TextRecognition';
+    'WindowsWorkload.ImageContentModeration';
+    'WindowsWorkload.ScreenSemanticsOCR';
+    'WindowsWorkload.ImageSuperResolution';
+    'WindowsWorkload.ObjectErase';
+    'WindowsWorkload.ImageDescriptor';
+    'WindowsWorkload.PortraitBlur';
+    'WindowsWorkload.TextToSpeech';
+    'WindowsWorkload.SpeechToText';
+    'WindowsWorkload.ImageSegmentation';
+    'WindowsWorkload.CreativeFilter';
+    'WindowsWorkload.StudioEffects';
+    'WindowsWorkload.SubtitleTranslation';
+    'WindowsWorkload.Summarization';
+    'WindowsWorkload.RewriteTextSuggestion';
+    'MicrosoftWindows.Voiess';
+    'MicrosoftWindows.Speion';
+    'MicrosoftWindows.Livtop';
+    'MicrosoftWindows.InpApp';
+    'MicrosoftWindows.Filons';
+    'aimgr';
+);
+$getCommand = { Get-AppxProvisionedPackage -Online; };
+$filterCommand = { $_.DisplayName -eq $selector; };
+$removeCommand = {
+    [CmdletBinding()]
+    param([Parameter(Mandatory, ValueFromPipeline)] $InputObject);
+    process { $InputObject | Remove-AppxProvisionedPackage -AllUsers -Online -ErrorAction 'Continue'; }
+};
+$type = 'Package';
+$logfile = 'C:\Windows\Setup\Scripts\RemovePackages.log';
+& {
+    $installed = & $getCommand;
+    foreach ($selector in $selectors) {
+        $result = [ordered] @{ Selector = $selector; };
+        $found = $installed | Where-Object -FilterScript $filterCommand;
+        if ($found) {
+            $result.Output = $found | & $removeCommand;
+            if ($?) { $result.Message = "$type removed."; }
+            else { $result.Message = "$type not removed."; $result.Error = $Error[0]; }
+        } else {
+            $result.Message = "$type not installed.";
+        }
+        $result | ConvertTo-Json -Depth 3 -Compress;
+    }
+} *>&1 >> $logfile;
+]]></File>
+
+    <!-- ============================================================
+         RemoveCapabilities.ps1 — Remove recursos opcionais desnecessarios
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\RemoveCapabilities.ps1"><![CDATA[
+$selectors = @(
+    'Print.Fax.Scan';
+    'Language.Handwriting';
+    'MathRecognizer';
+    'OneCoreUAP.OneSync';
+    'Microsoft.Windows.MSPaint';
+    'App.Support.QuickAssist';
+    'Microsoft.Windows.SnippingTool';
+    'Language.Speech';
+    'Language.TextToSpeech';
+    'App.StepsRecorder';
+    'Hello.Face.18967';
+    'Hello.Face.Migration.18967';
+    'Hello.Face.20134';
+    'Media.WindowsMediaPlayer';
+    'Microsoft.Windows.WordPad';
+);
+$getCommand = {
+    Get-WindowsCapability -Online | Where-Object -Property 'State' -NotIn -Value @('NotPresent'; 'Removed';);
+};
+$filterCommand = { ($_.Name -split '~')[0] -eq $selector; };
+$removeCommand = {
+    [CmdletBinding()]
+    param([Parameter(Mandatory, ValueFromPipeline)] $InputObject);
+    process { $InputObject | Remove-WindowsCapability -Online -ErrorAction 'Continue'; }
+};
+$type = 'Capability';
+$logfile = 'C:\Windows\Setup\Scripts\RemoveCapabilities.log';
+& {
+    $installed = & $getCommand;
+    foreach ($selector in $selectors) {
+        $result = [ordered] @{ Selector = $selector; };
+        $found = $installed | Where-Object -FilterScript $filterCommand;
+        if ($found) {
+            $result.Output = $found | & $removeCommand;
+            if ($?) { $result.Message = "$type removed."; }
+            else { $result.Message = "$type not removed."; $result.Error = $Error[0]; }
+        } else {
+            $result.Message = "$type not installed.";
+        }
+        $result | ConvertTo-Json -Depth 3 -Compress;
+    }
+} *>&1 >> $logfile;
+]]></File>
+
+    <!-- ============================================================
+         RemoveFeatures.ps1 — Desabilita features opcionais
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\RemoveFeatures.ps1"><![CDATA[
+$selectors = @(
+    'Recall';
+    'Microsoft-SnippingTool';
+);
+$getCommand = {
+    Get-WindowsOptionalFeature -Online | Where-Object -Property 'State' -NotIn -Value @('Disabled'; 'DisabledWithPayloadRemoved';);
+};
+$filterCommand = { $_.FeatureName -eq $selector; };
+$removeCommand = {
+    [CmdletBinding()]
+    param([Parameter(Mandatory, ValueFromPipeline)] $InputObject);
+    process { $InputObject | Disable-WindowsOptionalFeature -Online -Remove -NoRestart -ErrorAction 'Continue'; }
+};
+$type = 'Feature';
+$logfile = 'C:\Windows\Setup\Scripts\RemoveFeatures.log';
+& {
+    $installed = & $getCommand;
+    foreach ($selector in $selectors) {
+        $result = [ordered] @{ Selector = $selector; };
+        $found = $installed | Where-Object -FilterScript $filterCommand;
+        if ($found) {
+            $result.Output = $found | & $removeCommand;
+            if ($?) { $result.Message = "$type removed."; }
+            else { $result.Message = "$type not removed."; $result.Error = $Error[0]; }
+        } else {
+            $result.Message = "$type not installed.";
+        }
+        $result | ConvertTo-Json -Depth 3 -Compress;
+    }
+} *>&1 >> $logfile;
+]]></File>
+
+    <!-- ============================================================
+         SetStartPins.ps1 — Start Menu sem tiles fixados
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\SetStartPins.ps1"><![CDATA[
+$json = '{"pinnedList":[]}';
+if ([System.Environment]::OSVersion.Version.Build -lt 20000) { return; }
+$key = 'Registry::HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Start';
+New-Item -Path $key -ItemType 'Directory' -ErrorAction 'SilentlyContinue';
+Set-ItemProperty -LiteralPath $key -Name 'ConfigureStartPins' -Value $json -Type 'String';
+]]></File>
+
+    <!-- ============================================================
+         Specialize.ps1 — Configuracoes principais do sistema
+         Executa durante a fase specialize (antes do primeiro boot)
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\Specialize.ps1"><![CDATA[
+$log = 'C:\Windows\Setup\Scripts\Specialize.log'
+function Log { param($m) "$(Get-Date -f 'HH:mm:ss') $m" | Out-File $log -Append -Encoding UTF8 }
+Log '=== Specialize.ps1 iniciado ==='
+
+# --- OOBE: permitir conta local sem internet ---
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE" /v BypassNRO /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+Log 'BypassNRO configurado'
+
+# --- ONEDRIVE: remover instalador e atalhos ---
+Remove-Item -LiteralPath 'C:\Users\Default\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\OneDrive.lnk',
+            'C:\Windows\System32\OneDriveSetup.exe',
+            'C:\Windows\SysWOW64\OneDriveSetup.exe' -ErrorAction Continue
+Remove-Item -LiteralPath 'Registry::HKLM\Software\Microsoft\WindowsUpdate\Orchestrator\UScheduler_Oobe\DevHomeUpdate' -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath 'Registry::HKLM\Software\Microsoft\WindowsUpdate\Orchestrator\UScheduler_Oobe\OutlookUpdate' -Force -ErrorAction SilentlyContinue
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Communications" /v ConfigureChatAutoInstall /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'OneDrive e auto-installs bloqueados'
+
+# --- REMOCAO DE APPS ---
+Log 'Iniciando remocao de apps...'
+Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\RemovePackages.ps1' -Raw | Invoke-Expression
+Log 'Apps removidos'
+
+# --- REMOCAO DE CAPABILITIES ---
+Log 'Iniciando remocao de capabilities...'
+Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\RemoveCapabilities.ps1' -Raw | Invoke-Expression
+Log 'Capabilities removidas'
+
+# --- REMOCAO DE FEATURES ---
+Log 'Iniciando remocao de features...'
+Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\RemoveFeatures.ps1' -Raw | Invoke-Expression
+Log 'Features removidas'
+
+# --- CONTA: senha sem expiracao ---
+net.exe accounts /maxpwage:UNLIMITED 2>&1 | Out-Null
+Log 'Senha sem expiracao configurada'
+
+# --- SMARTSCREEN: desabilitado ---
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreenEnabled /t REG_SZ /d "Off" /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WTDS\Components" /v ServiceEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WTDS\Components" /v NotifyMalicious /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WTDS\Components" /v NotifyPasswordReuse /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WTDS\Components" /v NotifyUnsafeApp /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Systray" /v HideSystray /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+Log 'SmartScreen desabilitado'
+
+# --- REMOTE DESKTOP: habilitado ---
+netsh.exe advfirewall firewall set rule group="@FirewallAPI.dll,-28752" new enable=Yes 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'Remote Desktop habilitado'
+
+# --- EXECUCAO POWERSHELL ---
+Set-ExecutionPolicy -Scope LocalMachine -ExecutionPolicy RemoteSigned -Force
+reg.exe add "HKLM\Software\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" /v ExecutionPolicy /t REG_SZ /d "RemoteSigned" /f 2>&1 | Out-Null
+Log 'ExecutionPolicy RemoteSigned'
+
+# --- SISTEMA DE ARQUIVOS ---
+fsutil.exe behavior set disableLastAccess 1 2>&1 | Out-Null
+Log 'DisableLastAccess ativado'
+
+# --- CONTENT DELIVERY / ADS SILENCIOSOS ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableWindowsConsumerFeatures /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+Log 'ContentDelivery bloqueado'
+
+# --- BITLOCKER: prevenir criptografia automatica ---
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\BitLocker" /v PreventDeviceEncryption /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+Log 'BitLocker auto-encrypt bloqueado'
+
+# --- EDGE: sem first run e sem startup boost ---
+reg.exe add "HKLM\Software\Policies\Microsoft\Edge" /v HideFirstRunExperience /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Policies\Microsoft\Edge\Recommended" /v BackgroundModeEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Policies\Microsoft\Edge\Recommended" /v StartupBoostEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'Edge configurado'
+
+# --- WIDGETS / NEWS: desabilitados ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'Widgets desabilitados'
+
+# --- UAC: elevacao silenciosa para admins (sem prompt) ---
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v ConsentPromptBehaviorAdmin /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v PromptOnSecureDesktop /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'UAC configurado (sem prompt para admins)'
+
+# --- WORKSPACE JOIN: bloquear ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WorkplaceJoin" /v BlockAADWorkplaceJoin /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+Log 'WorkplaceJoin bloqueado'
+
+# --- START MENU: sem tiles ---
+Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\SetStartPins.ps1' -Raw | Invoke-Expression
+Log 'Start Menu configurado sem tiles'
+
+# --- EFEITOS VISUAIS: otimizados para desempenho ---
+$ve = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects'
+@{
+    'ControlAnimations'      = 0  # Animacoes de controle: OFF
+    'AnimateMinMax'          = 1  # Minimizar/maximizar janelas: ON (visual util)
+    'TaskbarAnimations'      = 1  # Animacoes da barra: ON
+    'DWMAeroPeekEnabled'     = 0  # Aero Peek: OFF
+    'MenuAnimation'          = 0  # Animacoes de menu: OFF
+    'TooltipAnimation'       = 0  # Animacoes de tooltip: OFF
+    'SelectionFade'          = 0  # Fade de selecao: OFF
+    'DWMSaveThumbnailEnabled'= 0  # Miniaturas DWM: OFF
+    'CursorShadow'           = 0  # Sombra do cursor: OFF
+    'ListviewShadow'         = 0  # Sombra de listagem: OFF
+    'ThumbnailsOrIcon'       = 1  # Miniaturas de arquivo: ON
+    'ListviewAlphaSelect'    = 0  # Alpha na selecao: OFF
+    'DragFullWindows'        = 1  # Arrastar janela completa: ON
+    'ComboBoxAnimation'      = 0  # Animacao de combo: OFF
+    'FontSmoothing'          = 1  # Suavizacao de fonte: ON (leitura)
+    'ListBoxSmoothScrolling' = 1  # Scroll suave: ON
+    'DropShadow'             = 0  # Sombra de janela: OFF
+}.GetEnumerator() | ForEach-Object {
+    Set-ItemProperty -LiteralPath "$ve\$($_.Key)" -Name 'DefaultValue' -Value $_.Value -Type DWord -Force -ErrorAction SilentlyContinue
+}
+Log 'Efeitos visuais configurados'
+
+# --- TELEMETRIA: desabilitada ---
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v MaxTelemetryAllowed /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v AITEnable /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v DoNotShowFeedbackNotifications /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v AllowCortana /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo" /v DisabledByGroupPolicy /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting" /v Value /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots" /v Value /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance" /v MaintenanceDisabled /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting" /v Disabled /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance" /v fAllowToGetHelp /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" /v Value /t REG_SZ /d "Deny" /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\OneDrive" /v KFMBlockOptIn /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+Log 'Telemetria desabilitada'
+
+# --- IA: bloqueada completamente ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v TurnOffWindowsCopilot /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableAIDataAnalysis /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v AllowRecallEnablement /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v TurnOffSavingSnapshots /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableClickToDo /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableSettingsAgent /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableAgentConnectors /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableAgentWorkspaces /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableRemoteAgentConnectors /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v AllowCopilotRuntime /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\generativeAI" /v Value /t REG_SZ /d "Deny" /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v LetAppsAccessGenerativeAI /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\systemAIModels" /v Value /t REG_SZ /d "Deny" /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v LetAppsAccessSystemAIModels /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\systemAIModels" /v RecordUsageData /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Paint" /v DisableImageCreator /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Paint" /v DisableCocreator /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Paint" /v DisableGenerativeFill /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Paint" /v DisableGenerativeErase /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CopilotKey" /v SetCopilotHardwareKey /t REG_SZ /d "" /f 2>&1 | Out-Null
+Log 'IA bloqueada completamente'
+
+# --- PERFORMANCE: otimizacoes para CPUs antigas e 4GB RAM ---
+# Prioridade para apps em primeiro plano (importante para Chrome + Office)
+reg.exe add "HKLM\System\CurrentControlSet\Control\PriorityControl" /v Win32PrioritySeparation /t REG_DWORD /d 38 /f 2>&1 | Out-Null
+# Multimedia: 10% para sistema, 90% para apps (evita audio corrupto)
+reg.exe add "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v SystemResponsiveness /t REG_DWORD /d 10 /f 2>&1 | Out-Null
+reg.exe add "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v NetworkThrottlingIndex /t REG_DWORD /d 10 /f 2>&1 | Out-Null
+# SvcHost: threshold 3.5GB — com 4GB, servicos serao isolados (aceitavel)
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control" /v SvcHostSplitThresholdInKB /t REG_DWORD /d 3670016 /f 2>&1 | Out-Null
+# Timeout de servicos: 30s ao inves de 60s (boot mais rapido)
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control" /v ServicesPipeTimeout /t REG_DWORD /d 30000 /f 2>&1 | Out-Null
+# GPU Hardware Scheduling (melhora latencia em GPUs compativeis)
+reg.exe add "HKLM\System\CurrentControlSet\Control\GraphicsDrivers" /v HwSchMode /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+# PowerThrottling OFF: critico para CPUs antigas sem HWP (evita throttle de background)
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v PowerThrottlingOff /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+# GameDVR: desabilitado (economiza CPU/RAM)
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v AllowGameDVR /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+# Apps em background: bloqueado via politica (economiza RAM em 4GB)
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v LetAppsRunInBackground /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+# Storage Sense: desabilitado (evita limpezas automaticas inesperadas)
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\StorageSense" /v AllowStorageSenseGlobal /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+# Search WebView2: desabilitado (elimina processos Edge extras do SearchHost.exe)
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\FeatureManagement\Overrides\8\1694661260" /v EnabledState /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\FeatureManagement\Overrides\8\1694661260" /v EnabledStateOptions /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\FeatureManagement\Overrides\8\1694661260" /v Variant /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\FeatureManagement\Overrides\8\1694661260" /v VariantPayload /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\FeatureManagement\Overrides\8\1694661260" /v VariantPayloadKind /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'Performance configurada'
+
+# --- DEVICEGUARD / VBS: desabilitado (ganho real em hardware antigo) ---
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard" /v EnableVirtualizationBasedSecurity /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard" /v RequirePlatformSecurityFeatures /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard" /v Locked /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" /v Enabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" /v Locked /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'DeviceGuard/VBS desabilitado'
+
+# --- WINDOWS UPDATE: bloquear apenas drivers opcionais ---
+reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v ExcludeWUDriversInQualityUpdate /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+Log 'WU: drivers opcionais bloqueados, essenciais permitidos'
+
+# --- SERVICOS: ajuste para 4GB RAM e uso corporativo ---
+# Legenda: 2=Auto, 3=Manual(inicia sob demanda), 4=Disabled
+$services = @{
+    'DiagTrack'              = 3  # Telemetria Connected User Experiences
+    'CDPSvc'                 = 3  # Cross-device Platform (logging de dispositivos)
+    'CDPUserSvc'             = 3  # Cross-device Platform por usuario
+    'WerSvc'                 = 3  # Windows Error Reporting
+    'lfsvc'                  = 3  # Geolocalizacao
+    'wisvc'                  = 3  # Windows Insider Service
+    'WSAIFabricSvc'          = 4  # Windows AI Fabric (desabilitado - sem IA)
+    'WalletService'          = 3  # NFC/Pagamentos digitais
+    'SCardSvr'               = 3  # Smart Card
+    'ScDeviceEnum'           = 3  # Enumeracao de Smart Card
+    'SCPolicySvc'            = 3  # Smart Card Policy
+    'XblAuthManager'         = 3  # Xbox Live Auth
+    'XblGameSave'            = 3  # Xbox Live Game Save
+    'XboxNetApiSvc'          = 3  # Xbox Live Network
+    'WbioSrvc'               = 3  # Biometria Windows Hello
+    'Fax'                    = 4  # Servico de Fax (inutilizado)
+    'WMPNetworkSvc'          = 4  # Windows Media Player Network Share
+    'MixedRealityOpenXRSvc'  = 3  # OpenXR/VR
+    'icssvc'                 = 3  # Internet Connection Sharing
+    'SmsRouter'              = 3  # SMS Router
+    'WpcMonSvc'              = 3  # Controle Parental
+    'SEMgrSvc'               = 3  # Secure Element Manager (NFC)
+    'svsvc'                  = 3  # Spot Verifier
+    'RasMan'                 = 3  # Remote Access Connection Manager
+    'RasAuto'                = 3  # Remote Access Auto Connection
+    'TermService'            = 3  # Remote Desktop Services (inicia sob demanda)
+    'SessionEnv'             = 3  # RDP Session Environment
+    'UmRdpService'           = 3  # RDP User Mode Port Redirector
+    'PcaSvc'                 = 3  # Program Compatibility Assistant
+    'SensrSvc'               = 3  # Sensor Monitoring
+    'SensorDataService'      = 3  # Sensor Data Service
+    'TapiSrv'                = 3  # Telephony API
+    'RetailDemo'             = 3  # Retail Demo Service
+    'PhoneSvc'               = 3  # Phone Service
+    'MapsBroker'             = 3  # Downloaded Maps Manager
+    'TabletInputService'     = 4  # Teclado virtual/touch (desktop corporativo)
+    'SysMain'                = 4  # Superfetch: DESABILITADO (libera RAM em 4GB)
+    'WSearch'                = 3  # Windows Search: Manual (usuarios usam busca)
+    'Spooler'                = 3  # Print Spooler: Manual (pode ter impressoras)
+    'WMPNetworkSvc'          = 4  # WMP Network Sharing
+}
+foreach ($s in $services.GetEnumerator()) {
+    reg.exe add "HKLM\SYSTEM\CurrentControlSet\Services\$($s.Key)" /v Start /t REG_DWORD /d $s.Value /f 2>$null | Out-Null
+}
+Log "Servicos configurados: $($services.Count) entradas"
+
+# --- TAREFAS AGENDADAS: desabilitar telemetria e IA ---
+$tasks = @(
+    '\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser'
+    '\Microsoft\Windows\Application Experience\ProgramDataUpdater'
+    '\Microsoft\Windows\Application Experience\MareBackup'
+    '\Microsoft\Windows\Application Experience\StartupAppTask'
+    '\Microsoft\Windows\Customer Experience Improvement Program\Consolidator'
+    '\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip'
+    '\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector'
+    '\Microsoft\Windows\Feedback\Siuf\DmClient'
+    '\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload'
+    '\Microsoft\Windows\Windows Error Reporting\QueueReporting'
+    '\Microsoft\Windows\PI\Sqm-Tasks'
+    '\Microsoft\Windows\Maps\MapsUpdateTask'
+    '\Microsoft\Windows\Autochk\Proxy'
+    '\Microsoft\Windows\Shell\FamilySafetyMonitor'
+    '\Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem'
+    '\Microsoft\Windows\WindowsAI\RecallConfiguration'
+    '\Microsoft\Windows\WindowsAI\RecallPipeline'
+    '\Microsoft\Office\Office Actions Server'
+)
+foreach ($t in $tasks) {
+    schtasks /Change /TN "$t" /Disable 2>$null | Out-Null
+}
+Log "Tarefas agendadas desabilitadas: $($tasks.Count)"
+
+# --- PLANO DE ENERGIA: Equilibrado TI (otimizado para CPUs antigas) ---
+$planGuid = '381b4222-f694-41f0-9685-ff5bb260df2e'
+powercfg /changename $planGuid 'Equilibrado TI' 2>$null | Out-Null
+# Monitor: apaga apos 60min (AC), 3min (DC)
+powercfg /setacvalueindex $planGuid 7516b95f-f776-4464-8c53-06167f40cc99 3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e 3600 2>$null | Out-Null
+powercfg /setdcvalueindex $planGuid 7516b95f-f776-4464-8c53-06167f40cc99 3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e 180 2>$null | Out-Null
+# HD: nunca desligar (AC), nunca (DC)
+powercfg /setacvalueindex $planGuid 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-b16a-e040e769756e 0 2>$null | Out-Null
+powercfg /setdcvalueindex $planGuid 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-b16a-e040e769756e 0 2>$null | Out-Null
+# Sleep: 60min (AC), 3min (DC)
+powercfg /setacvalueindex $planGuid 238c9fa8-0aad-41ed-83f4-97be242c8f20 29f6c1db-86da-48c5-9fdb-f2b67b1f44da 3600 2>$null | Out-Null
+powercfg /setdcvalueindex $planGuid 238c9fa8-0aad-41ed-83f4-97be242c8f20 29f6c1db-86da-48c5-9fdb-f2b67b1f44da 180 2>$null | Out-Null
+# Hibernate: desabilitado
+powercfg /setacvalueindex $planGuid 238c9fa8-0aad-41ed-83f4-97be242c8f20 9d7815a6-7ee4-497e-8888-515a05f02364 0 2>$null | Out-Null
+powercfg /setdcvalueindex $planGuid 238c9fa8-0aad-41ed-83f4-97be242c8f20 9d7815a6-7ee4-497e-8888-515a05f02364 0 2>$null | Out-Null
+# CPU: min 5%, max 100% (AC e DC) — critico para CPUs antigas
+powercfg /setacvalueindex $planGuid 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 5 2>$null | Out-Null
+powercfg /setdcvalueindex $planGuid 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 5 2>$null | Out-Null
+powercfg /setacvalueindex $planGuid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100 2>$null | Out-Null
+powercfg /setdcvalueindex $planGuid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100 2>$null | Out-Null
+# CPU Boost: agressivo
+powercfg /setacvalueindex $planGuid 54533251-82be-4824-96c1-47b60b740d00 be337238-0d82-4146-a960-4f3749d470c7 2 2>$null | Out-Null
+# PCIe Link State Power Management: desabilitado para performance
+powercfg /setacvalueindex $planGuid 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0 2>$null | Out-Null
+powercfg /setdcvalueindex $planGuid 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0 2>$null | Out-Null
+# USB selective suspend: desabilitado (evita dispositivos desconectando)
+powercfg /setacvalueindex $planGuid 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 2>$null | Out-Null
+powercfg /setdcvalueindex $planGuid 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 2>$null | Out-Null
+# Ativar plano
+powercfg /setactive $planGuid 2>$null | Out-Null
+# Desabilitar hibernate (economiza ~4GB de disco)
+powercfg /hibernate off 2>$null | Out-Null
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HibernateEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SYSTEM\ControlSet001\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+# Fast Startup: desabilitado (pode causar problemas em hardware antigo)
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings" /v ShowHibernateOption /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings" /v ShowSleepOption /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+Log 'Plano de energia configurado'
+
+Log '=== Specialize.ps1 concluido ==='
+]]></File>
+
+    <!-- ============================================================
+         DefaultUser.ps1 — Configuracoes do perfil padrao
+         Aplicadas a todos os usuarios criados nesta maquina
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\DefaultUser.ps1"><![CDATA[
+$log = 'C:\Windows\Setup\Scripts\DefaultUser.log'
+function Log { param($m) "$(Get-Date -f 'HH:mm:ss') $m" | Out-File $log -Append -Encoding UTF8 }
+Log '=== DefaultUser.ps1 iniciado ==='
+
+# Copilot: desabilitado para novos usuarios
+reg.exe add "HKU\DefaultUser\Software\Policies\Microsoft\Windows\WindowsCopilot" /v TurnOffWindowsCopilot /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+
+# OneDrive: remover do startup de novos usuarios
+Remove-ItemProperty -LiteralPath 'Registry::HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'OneDriveSetup' -Force -ErrorAction Continue
+
+# GameDVR: desabilitado
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v AppCaptureEnabled /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# Task View: botao oculto (economiza espaco na barra)
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# SmartScreen Edge: desabilitado para novos usuarios
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Edge\SmartScreenEnabled" /ve /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Edge\SmartScreenPuaEnabled" /ve /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\AppHost" /v EnableWebContentEvaluation /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\AppHost" /v PreventOverride /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# ContentDeliveryManager: sem apps sugeridos, sem sugestoes, sem anuncios silenciosos
+$cdm = 'ContentDeliveryAllowed','FeatureManagementEnabled','OEMPreInstalledAppsEnabled','PreInstalledAppsEnabled',
+       'PreInstalledAppsEverEnabled','SilentInstalledAppsEnabled','SoftLandingEnabled','SubscribedContentEnabled',
+       'SubscribedContent-310093Enabled','SubscribedContent-338387Enabled','SubscribedContent-338388Enabled',
+       'SubscribedContent-338389Enabled','SubscribedContent-338393Enabled','SubscribedContent-353694Enabled',
+       'SubscribedContent-353696Enabled','SubscribedContent-353698Enabled','SystemPaneSuggestionsEnabled'
+foreach ($n in $cdm) {
+    reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v $n /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+}
+
+# Busca: sem sugestoes Bing na barra de pesquisa
+reg.exe add "HKU\DefaultUser\Software\Policies\Microsoft\Windows\Explorer" /v DisableSearchBoxSuggestions /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+
+# DWM: cor de acento sem aplicar na barra de titulo
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\DWM" /v ColorPrevalence /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# Widgets: desabilitados
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# Chat Teams: ocultar botao
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarMn /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+
+# Registrar UserOnce.ps1 para executar no primeiro logon de cada usuario
+reg.exe add "HKU\DefaultUser\Software\Microsoft\Windows\CurrentVersion\RunOnce" /v "UnattendUserSetup" /t REG_SZ /d "powershell.exe -WindowStyle Normal -NoProfile -Command \"Get-Content -LiteralPath 'C:\Windows\Setup\Scripts\UserOnce.ps1' -Raw | Invoke-Expression;\"" /f 2>&1 | Out-Null
+
+Log '=== DefaultUser.ps1 concluido ==='
+]]></File>
+
+    <!-- ============================================================
+         UserOnce.ps1 — Configuracoes por usuario (primeiro logon)
+         Executado via RunOnce para cada usuario novo
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\UserOnce.ps1"><![CDATA[
+$log = "$env:TEMP\UserOnce.log"
+function Log { param($m) "$(Get-Date -f 'HH:mm:ss') $m" | Out-File $log -Append -Encoding UTF8 }
+Log '=== UserOnce.ps1 iniciado ==='
+
+# Copilot provider: remover AppxPackage do usuario
+Get-AppxPackage -Name 'Microsoft.Windows.Ai.Copilot.Provider' -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
+Log 'Copilot.Provider removido'
+
+# Menu de contexto classico (sem o menu novo do Win11 com "Mostrar mais opcoes")
+reg.exe add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /ve /f 2>&1 | Out-Null
+Log 'Menu de contexto classico ativado'
+
+# Efeitos visuais: modo customizado
+Set-ItemProperty -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects' -Name 'VisualFXSetting' -Type 'DWord' -Value 3 -Force -ErrorAction SilentlyContinue
+Log 'VisualFXSetting=3 (customizado)'
+
+# Tema: escuro para sistema e apps
+$themeKey = 'Registry::HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+Set-ItemProperty -LiteralPath $themeKey -Name 'SystemUsesLightTheme' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+Set-ItemProperty -LiteralPath $themeKey -Name 'AppsUseLightTheme' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+Set-ItemProperty -LiteralPath $themeKey -Name 'ColorPrevalence' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+Set-ItemProperty -LiteralPath $themeKey -Name 'EnableTransparency' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+Log 'Tema escuro configurado'
+
+# Papel de parede: cor solida preta (economiza memoria)
+try {
+    Add-Type -TypeDefinition '
+using System; using System.Drawing; using System.Runtime.InteropServices;
+public class WP {
+    [DllImport("user32.dll")] public static extern bool SystemParametersInfo(uint a,uint b,string c,uint d);
+    [DllImport("user32.dll")] public static extern bool SetSysColors(int n, int[] e, int[] v);
+}' -ReferencedAssemblies 'System.Drawing' -ErrorAction Stop
+    [WP]::SystemParametersInfo(20, 0, "", 0) | Out-Null
+    [WP]::SetSysColors(1, @(1), @(0)) | Out-Null
+    Set-ItemProperty 'Registry::HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Wallpapers' -Name 'BackgroundType' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty 'Registry::HKCU\Control Panel\Desktop' -Name 'WallPaper' -Value '' -Type String -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty 'Registry::HKCU\Control Panel\Colors' -Name 'Background' -Value '0 0 0' -Type String -Force -ErrorAction SilentlyContinue
+    Log 'Papel de parede preto configurado'
+} catch {
+    Log "Erro ao configurar papel de parede: $($_.Exception.Message)"
+}
+
+# Cor de acento: azul padrao Windows (#0078D4)
+try {
+    Add-Type -AssemblyName 'System.Drawing'
+    $accent = [System.Drawing.ColorTranslator]::FromHtml('#0078D4')
+    $dword = [System.BitConverter]::ToUInt32([byte[]]@($accent.R, $accent.G, $accent.B, $accent.A), 0)
+    $accentKey = 'Registry::HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Accent'
+    Set-ItemProperty -LiteralPath $accentKey -Name 'StartColorMenu' -Value $dword -Type DWord -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty -LiteralPath $accentKey -Name 'AccentColorMenu' -Value $dword -Type DWord -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty -LiteralPath 'Registry::HKCU\Software\Microsoft\Windows\DWM' -Name 'AccentColor' -Value $dword -Type DWord -Force -ErrorAction SilentlyContinue
+    Log 'Cor de acento configurada (#0078D4)'
+} catch {
+    Log "Erro ao configurar cor de acento: $($_.Exception.Message)"
+}
+
+# Reiniciar Explorer para aplicar configuracoes visuais
+Start-Sleep -Seconds 2
+Get-Process -Name 'explorer' -ErrorAction SilentlyContinue | Where-Object {
+    $_.SessionId -eq (Get-Process -Id $PID).SessionId
+} | Stop-Process -Force
+Log '=== UserOnce.ps1 concluido ==='
+]]></File>
+
+    <!-- ============================================================
+         FirstLogon.ps1 — Executado nos FirstLogonCommands do OOBE
+    ============================================================ -->
+    <File path="C:\Windows\Setup\Scripts\FirstLogon.ps1"><![CDATA[
+$log = 'C:\Windows\Setup\Scripts\FirstLogon.log'
+function Log { param($m) "$(Get-Date -f 'HH:mm:ss') $m" | Out-File $log -Append -Encoding UTF8 }
+Log '=== FirstLogon.ps1 iniciado ==='
+
+# Desabilitar auto-logon apos o primeiro logon
+Set-ItemProperty -LiteralPath 'Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoLogonCount' -Type 'DWord' -Value 0 -Force -ErrorAction SilentlyContinue
+Log 'AutoLogon desabilitado para proximos logins'
+
+# DOMINIO: ingresso manual pos-instalacao (nao automatizado)
+# Para ingressar: abrir PowerShell como admin e executar:
+# Add-Computer -DomainName "NOME_DO_DOMINIO" -Credential (Get-Credential) -Restart
+Log 'Ingresso em dominio: manual pos-instalacao'
+
+Log '=== FirstLogon.ps1 concluido ==='
+Log "Instalacao concluida em: $(Get-Date)"
+Log "Maquina: $env:COMPUTERNAME"
+Log "Usuario: $env:USERNAME"
+]]></File>
+
+  </Extensions>
+
+</unattend>
