@@ -2,7 +2,7 @@
 
 Este repositório contém as "receitas" (arquivos de resposta `autounattend.xml`) projetadas para automatizar a instalação, limpar bloatwares e otimizar a performance do Windows 10 (22H2) direto na formatação (Zero-Touch Deployment). 
 
-O projeto foi dividido em duas variantes principais para atender tanto a infraestruturas corporativas quanto a usuários domésticos e gamers.
+O projeto foi dividido em duas variantes principais para atender tanto a infraestruturas corporativas quanto a usuários domésticos e gaymers.
 
 ---
 
